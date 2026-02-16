@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, Query } from '@nestjs/common';
 import { LinksService } from './links.service';
 import { CreateLinkDto } from './dto/create-link.dto';
 import { SearchLinksDto } from './dto/search-links.dto';
 
 @Controller('links')
 export class LinksController {
+  private readonly logger = new Logger(LinksController.name);
+
   constructor(private readonly linksService: LinksService) {}
 
   @Post()
@@ -14,6 +16,7 @@ export class LinksController {
 
   @Get('search')
   search(@Query() query: SearchLinksDto) {
-    return this.linksService.semanticSearch(query.q);
+    this.logger.debug(`Search query params: ${JSON.stringify(query)}`);
+    return this.linksService.semanticSearch(query.q, query.userId);
   }
 }

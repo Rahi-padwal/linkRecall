@@ -122,7 +122,7 @@ export class LinksService {
     }
   }
 
-  async semanticSearch(query: string) {
+  async semanticSearch(query: string, userId: string) {
     const input = query.trim();
     if (!input) {
       return [] as LinkSearchResult[];
@@ -137,29 +137,27 @@ export class LinksService {
           "userId",
           "originalUrl",
           "title",
-          "summary",
-          "keywords",
-          "rawExtractedText",
-          "createdAt"
+          ("embedding" <=> ARRAY[${Prisma.join(embedding)}]::vector) AS "score" -- cosine distance
         FROM "Link"
         WHERE "embedding" IS NOT NULL
-        ORDER BY "embedding" <=> ARRAY[${Prisma.join(embedding)}]::vector
+          AND "userId" = ${userId}
+        ORDER BY "score" ASC
         LIMIT 5
       `,
     );
 
-    return results;
+    return results.map((result) => ({
+      id: result.id,
+      originalUrl: result.originalUrl,
+      title: result.title ?? result.originalUrl,
+      score: result.score,
+    }));
   }
 }
 
 type LinkSearchResult = Pick<
   Link,
   | 'id'
-  | 'userId'
   | 'originalUrl'
   | 'title'
-  | 'summary'
-  | 'keywords'
-  | 'rawExtractedText'
-  | 'createdAt'
->;
+> & { score: number };
