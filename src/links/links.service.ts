@@ -121,4 +121,45 @@ export class LinksService {
       return { metaDescription: null };
     }
   }
+
+  async semanticSearch(query: string) {
+    const input = query.trim();
+    if (!input) {
+      return [] as LinkSearchResult[];
+    }
+
+    const embedding = await this.embeddingService.generateEmbedding(input);
+
+    const results = await this.prisma.$queryRaw<LinkSearchResult[]>(
+      Prisma.sql`
+        SELECT
+          "id",
+          "userId",
+          "originalUrl",
+          "title",
+          "summary",
+          "keywords",
+          "rawExtractedText",
+          "createdAt"
+        FROM "Link"
+        WHERE "embedding" IS NOT NULL
+        ORDER BY "embedding" <=> ARRAY[${Prisma.join(embedding)}]::vector
+        LIMIT 5
+      `,
+    );
+
+    return results;
+  }
 }
+
+type LinkSearchResult = Pick<
+  Link,
+  | 'id'
+  | 'userId'
+  | 'originalUrl'
+  | 'title'
+  | 'summary'
+  | 'keywords'
+  | 'rawExtractedText'
+  | 'createdAt'
+>;

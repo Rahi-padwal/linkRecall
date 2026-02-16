@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 const EMBEDDING_MODEL = 'nomic-embed-text';
 const EMBEDDING_DIMENSIONS = 768;
-const OLLAMA_EMBEDDINGS_URL = 'http://localhost:11434/api/embeddings';
+const OLLAMA_EMBEDDINGS_URL = 'http://127.0.0.1:11434/api/embeddings';
 
 @Injectable()
 export class EmbeddingService {

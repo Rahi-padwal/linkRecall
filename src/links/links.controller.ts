@@ -1,6 +1,7 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { LinksService } from './links.service';
 import { CreateLinkDto } from './dto/create-link.dto';
+import { SearchLinksDto } from './dto/search-links.dto';
 
 @Controller('links')
 export class LinksController {
@@ -9,5 +10,10 @@ export class LinksController {
   @Post()
   create(@Body() dto: CreateLinkDto) {
     return this.linksService.create(dto);
+  }
+
+  @Get('search')
+  search(@Query() query: SearchLinksDto) {
+    return this.linksService.semanticSearch(query.q);
   }
 }
