@@ -1,97 +1,357 @@
-<<<<<<< HEAD
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# linkRecall
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Build a memory of everything you read using local embeddings and semantic search.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
 
-## Description
+- **Save Links**: Quickly save URLs with automatic metadata extraction (title, description)
+- **Local Embeddings**: Generate 768-dimensional embeddings using Ollama's `nomic-embed-text` model (100% offline)
+- **Semantic Search**: Find saved links by concept, not just keywords, using pgvector cosine similarity
+- **Privacy-First**: All processing happens locally; no external API calls or data transmission
+- **Docker Ready**: One-command setup with `docker-compose` for PostgreSQL, pgvector, and Ollama
+- **Modern Stack**: NestJS backend + Next.js frontend with TypeScript and Tailwind CSS
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Screenshot
 
-## Project setup
+Dashboard UI with save link input (left) and semantic search interface (right), displaying search results with similarity scores.
 
-```bash
-$ npm install
+## Architecture Flowchart
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     linkRecall Workflow                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  SAVE LINK FLOW:                                                │
+│  ┌─────────────┐    ┌──────────────────┐    ┌──────────────┐   │
+│  │  User Pastes│───▶│ Extract Metadata │───▶│  Generate    │   │
+│  │  Link URL   │    │  (title, desc)   │    │  Embedding   │   │
+│  └─────────────┘    │  via Fetch + DOM │    │  (Ollama)    │   │
+│                     │  Parser          │    │  768 dims    │   │
+│                     └──────────────────┘    └───────┬──────┘   │
+│                                                     │           │
+│                                            ┌────────▼────────┐  │
+│                                            │ Store in DB:    │  │
+│                                            │ - URL, title,   │  │
+│                                            │ - embedding     │  │
+│                                            │ - userId        │  │
+│                                            └────────────────┘  │
+│                                                                 │
+│  SEARCH FLOW:                                                   │
+│  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
+│  │   User Query │───▶│  Generate Query  │───▶│ pgvector     │  │
+│  │              │    │  Embedding       │    │ Cosine Sim   │  │
+│  └──────────────┘    │  (Ollama)        │    │ (top 5)      │  │
+│                      │  768 dims        │    │ Filter by    │  │
+│                      └──────────────────┘    │ userId       │  │
+│                                              └───────┬──────┘  │
+│                                                      │          │
+│                                             ┌────────▼────────┐ │
+│                                             │ Return Results  │ │
+│                                             │ with Scores     │ │
+│                                             └────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Compile and run the project
+## Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Frontend** | Next.js 16.1+, React 19, TypeScript, Tailwind CSS | Dashboard UI for saving/searching links |
+| **Backend** | NestJS 10+, TypeScript 5.1+, class-validator | RESTful API with modular architecture |
+| **Database** | PostgreSQL 16, Prisma 5.12+, pgvector | Vector storage and similarity search |
+| **Embeddings** | Ollama (nomic-embed-text), 768 dimensions | Local embedding generation |
+| **Infrastructure** | Docker, Docker Compose | Containerized dev/production environment |
+| **Package Manager** | npm | Dependency management |
+
+## Installation
+
+### Prerequisites
+- **Node.js**: 18+ (installed)
+- **Docker & Docker Compose**: [Download](https://www.docker.com/products/docker-desktop)
+- **Git**: For cloning the repository
+
+### Step 1: Clone the Repository
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/yourusername/linkRecall.git
+cd linkRecall
 ```
 
-## Run tests
+### Step 2: Start Infrastructure (PostgreSQL + Ollama)
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker-compose up -d
 ```
+
+This starts:
+- **PostgreSQL** (port 5432) with pgvector extension
+- **Ollama** (port 11434) with models ready for use
+
+Wait ~30 seconds for services to stabilize. Verify with:
+
+```bash
+docker-compose ps
+```
+
+### Step 3: Install Backend Dependencies
+
+```bash
+npm install
+```
+
+### Step 4: Set Up the Database
+
+```bash
+npm run prisma:migrate:dev
+```
+
+This creates the database schema and runs migrations automatically.
+
+### Step 5: Start Backend Server
+
+```bash
+npm run start:dev
+```
+
+Backend runs on `http://localhost:3000`.
+
+### Step 6: Install Frontend Dependencies (in new terminal)
+
+```bash
+cd apps/web
+npm install
+```
+
+### Step 7: Start Frontend
+
+```bash
+npm run dev
+```
+
+Frontend runs on `http://localhost:3000` (Next.js redirects from port 3000).
+
+**Note**: If both services try to use port 3000, change the frontend `.env.local`:
+
+```
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+```
+
+or modify the Next.js dev server port in `package.json`:
+
+```json
+"dev": "next dev -p 3001"
+```
+
+## Usage
+
+### Saving a Link
+
+1. Open the dashboard at `http://localhost:3000`
+2. Paste a URL in the **"Save a Link"** input field
+3. Click **"Save"** button
+4. The system:
+   - Fetches the page's metadata (title, description)
+   - Generates a 768-dimensional embedding via Ollama
+   - Stores the link in PostgreSQL
+
+### Searching Links
+
+1. Type a search query in the **"Search your links"** field (e.g., "machine learning", "security", "APIs")
+2. Click **"Search"**
+3. Results display:
+   - **Title**: Extracted from the saved link's page
+   - **URL**: Original link
+   - **Score**: Cosine similarity (0–1, higher = more relevant)
+
+**Examples**:
+- Query: "How to build a REST API?" → Finds articles on APIs, web services, etc.
+- Query: "Database optimization" → Surfaces posts on indexing, performance tuning, etc.
+
+### Backend API Endpoints
+
+#### Save a Link
+```http
+POST /links
+Content-Type: application/json
+
+{
+  "url": "https://example.com/article",
+  "userId": "user-123"
+}
+```
+
+**Response**:
+```json
+{
+  "id": "uuid",
+  "originalUrl": "https://example.com/article",
+  "title": "Article Title",
+  "embedding": null,
+  "createdAt": "2025-01-21T12:00:00Z"
+}
+```
+
+#### Search Links
+```http
+GET /links/search?q=machine%20learning&userId=user-123
+```
+
+**Response**:
+```json
+[
+  {
+    "id": "uuid-1",
+    "originalUrl": "https://example.com/ml-article",
+    "title": "ML Basics",
+    "score": 0.87,
+    "createdAt": "2025-01-21T10:00:00Z"
+  },
+  {
+    "id": "uuid-2",
+    "originalUrl": "https://example.com/ai-guide",
+    "title": "AI Guide",
+    "score": 0.79,
+    "createdAt": "2025-01-20T15:00:00Z"
+  }
+]
+```
+
+## Development
+
+### Project Structure
+
+```
+linkRecall/
+├── src/                      # NestJS backend
+│   ├── app.module.ts
+│   ├── main.ts
+│   ├── common/
+│   │   ├── embedding/        # Ollama integration
+│   │   └── prisma/           # Database client
+│   ├── links/               # Link save/search logic
+│   └── auth/                # Auth module (stub)
+├── apps/web/                # Next.js frontend
+│   ├── app/
+│   │   ├── page.tsx         # Dashboard UI
+│   │   └── globals.css
+│   └── package.json
+├── prisma/
+│   ├── schema.prisma        # Database schema
+│   └── migrations/          # DB migrations
+├── docker-compose.yml       # Infrastructure config
+└── package.json
+```
+
+### Key Environment Variables
+
+**Backend** (`.env`):
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/linkrecall
+OLLAMA_EMBEDDINGS_URL=http://127.0.0.1:11434/api/embeddings
+PORT=3000
+NODE_ENV=development
+```
+
+**Frontend** (`.env.local`):
+```
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+```
+
+### Running Tests
+
+```bash
+npm run test           # Unit tests
+npm run test:e2e       # End-to-end tests
+npm run test:cov       # Coverage report
+```
+
+### Database Migrations
+
+Create a new migration after updating `prisma/schema.prisma`:
+
+```bash
+npm run prisma:migrate:dev -- --name add_new_field
+```
+
+Deploy migrations in production:
+
+```bash
+npm run prisma:migrate:deploy
+```
+
+### Debugging
+
+Enable debug logging in the backend by setting:
+
+```env
+DEBUG=linkRecall:*
+```
+
+Frontend uses React DevTools; inspect network requests in browser DevTools.
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Docker Production Build
 
 ```bash
-$ npm install -g mau
-$ mau deploy
+docker build -t linkrecall:latest .
+docker run -d -p 3000:3000 \
+  -e DATABASE_URL="postgresql://..." \
+  -e OLLAMA_EMBEDDINGS_URL="http://ollama:11434/api/embeddings" \
+  linkrecall:latest
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Docker Compose Production
 
-## Resources
+Update `docker-compose.yml` for production:
+- Set `environment` variables for DATABASE_URL, OLLAMA endpoint
+- Use named volumes with backup strategy
+- Add a reverse proxy (Nginx) for HTTPS
 
-Check out a few resources that may come in handy when working with NestJS:
+### Cloud Deployment
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+**AWS/DigitalOcean/GCP**: Deploy both containers:
+1. Push backend image to registry
+2. Deploy PostgreSQL managed database (RDS/Cloud SQL)
+3. Deploy Ollama on compute instance or use local inference
+4. Route frontend requests through CDN
 
-## Support
+## Contributing
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+We welcome contributions! Please follow these steps:
+
+1. **Fork the repository** on GitHub
+2. **Create a feature branch**: `git checkout -b feature/your-feature-name`
+3. **Commit changes**: `git commit -m "Add your feature"`
+4. **Push to branch**: `git push origin feature/your-feature-name`
+5. **Open a Pull Request** with a clear description
+
+### Code Style
+
+- Use TypeScript in both backend and frontend
+- Run `npm run lint` to check code style
+- Keep functions small and well-documented
+- Write tests for new features
+
+### Reporting Issues
+
+Please use [GitHub Issues](https://github.com/yourusername/linkRecall/issues) to report bugs or suggest features. Include:
+- A clear title and description
+- Steps to reproduce (if applicable)
+- Your environment (OS, Node version, Docker version)
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-=======
-# linkRecall
->>>>>>> b023808b602ab41d0707f671ef0387acb48c6c38
+This project is licensed under the MIT License. See [LICENSE](./LICENSE) file for details.
+
+## Support
+
+- **Documentation**: See this README and inline code comments
+- **Issues**: [GitHub Issues](https://github.com/yourusername/linkRecall/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/linkRecall/discussions)
+
+---
+
+**Built with ❤️ for semantic recall and offline-first knowledge management.**
