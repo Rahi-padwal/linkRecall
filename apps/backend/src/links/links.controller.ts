@@ -14,6 +14,12 @@ export class LinksController {
     return this.linksService.create(dto);
   }
 
+  @Get()
+  getAllLinks(@Query('userId') userId: string) {
+    this.logger.debug(`Fetching all links for userId: ${userId}`);
+    return this.linksService.getAllLinks(userId);
+  }
+
   @Get('search')
   search(@Query() query: SearchLinksDto) {
     this.logger.debug(`Search query params: ${JSON.stringify(query)}`);

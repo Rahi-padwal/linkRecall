@@ -10,6 +10,7 @@
     "apps/web"
   ],
   "scripts": {
+    "start:dev": "npm run start:backend & npm run start:frontend",
     "build": "npm run build -w linkrecall-backend && npm run build -w linkrecall-web",
     "format": "npm run format -w linkrecall-backend && npm run format -w linkrecall-web",
     "lint": "npm run lint -w linkrecall-backend && npm run lint -w linkrecall-web",

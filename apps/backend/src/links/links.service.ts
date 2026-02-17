@@ -17,34 +17,18 @@ export class LinksService {
     try {
       this.logger.debug('Starting link create flow.');
       
-      // Use userId from DTO, or find/create a default user
-      let userId = dto.userId;
-      if (!userId) {
-        const user = await this.prisma.user.findFirst({
-          select: { id: true },
-        });
-        userId = user?.id
-          ? user.id
-          : (
-              await this.prisma.user.create({
-                data: { email: `temp+${Date.now()}@example.com` },
-                select: { id: true },
-              })
-            ).id;
-      } else {
-        // Ensure the provided userId exists, or create it
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          select: { id: true },
-        });
-        if (!user) {
-          await this.prisma.user.create({
-            data: { 
-              id: userId,
-              email: `user+${userId}@example.com` 
-            },
-          });
-        }
+      // Verify userId exists
+      if (!dto.userId) {
+        throw new Error('User ID is required');
+      }
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: dto.userId },
+        select: { id: true },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
       }
 
       const { metaDescription } = await this.extractMetadata(dto.originalUrl);
@@ -57,7 +41,7 @@ export class LinksService {
           summary: null,
           keywords: dto.keywords ?? [],
           rawExtractedText: null,
-          userId,
+          userId: dto.userId,
         },
       });
 
@@ -145,6 +129,26 @@ export class LinksService {
       );
       return { metaDescription: null };
     }
+  }
+
+  async getAllLinks(userId: string) {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    const links = await this.prisma.link.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        originalUrl: true,
+        title: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    this.logger.debug(`Retrieved ${links.length} links for userId: ${userId}`);
+    return links;
   }
 
   async semanticSearch(query: string, userId: string) {
