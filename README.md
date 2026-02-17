@@ -2,6 +2,33 @@
 
 Build a memory of everything you read using local embeddings and semantic search.
 
+## Quick Start (TL;DR)
+
+```bash
+# 1. Start Docker services
+docker-compose up -d
+
+# 2. Install dependencies (monorepo)
+npm install
+
+# 3. Set up database
+npm run prisma:migrate:dev
+
+# 4. Start backend (Terminal 1)
+npm run start:backend
+
+# 5. Start frontend (Terminal 2)
+npm run start:frontend
+
+# Open http://localhost:3001
+```
+
+**Key Points:**
+- Docker needed (PostgreSQL + Ollama)
+- Two terminals: one for backend, one for frontend
+- Backend: `http://localhost:3000`
+- Frontend: `http://localhost:3001`
+
 ## Features
 
 - **Save Links**: Quickly save URLs with automatic metadata extraction (title, description)
@@ -95,11 +122,13 @@ Wait ~30 seconds for services to stabilize. Verify with:
 docker-compose ps
 ```
 
-### Step 3: Install Backend Dependencies
+### Step 3: Install Dependencies
 
 ```bash
 npm install
 ```
+
+This installs dependencies for both backend and frontend (workspaces).
 
 ### Step 4: Set Up the Database
 
@@ -112,33 +141,20 @@ This creates the database schema and runs migrations automatically.
 ### Step 5: Start Backend Server
 
 ```bash
-npm run start:dev
+npm run start:backend
 ```
 
 Backend runs on `http://localhost:3000`.
 
-### Step 6: Install Frontend Dependencies (in new terminal)
+### Step 6: Start Frontend (in new terminal)
 
 ```bash
-cd apps/web
-npm install
+npm run start:frontend
 ```
 
-### Step 7: Start Frontend
+Frontend runs on `http://localhost:3001` (or see Next.js output for the correct port).
 
-```bash
-npm run dev
-```
-
-Frontend runs on `http://localhost:3000` (Next.js redirects from port 3000).
-
-**Note**: If both services try to use port 3000, change the frontend `.env.local`:
-
-```
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
-```
-
-or modify the Next.js dev server port in `package.json`:
+**Note**: If ports conflict, update `apps/web/package.json`:
 
 ```json
 "dev": "next dev -p 3001"
@@ -224,24 +240,33 @@ GET /links/search?q=machine%20learning&userId=user-123
 
 ```
 linkRecall/
-├── src/                      # NestJS backend
-│   ├── app.module.ts
-│   ├── main.ts
-│   ├── common/
-│   │   ├── embedding/        # Ollama integration
-│   │   └── prisma/           # Database client
-│   ├── links/               # Link save/search logic
-│   └── auth/                # Auth module (stub)
-├── apps/web/                # Next.js frontend
-│   ├── app/
-│   │   ├── page.tsx         # Dashboard UI
-│   │   └── globals.css
-│   └── package.json
-├── prisma/
-│   ├── schema.prisma        # Database schema
-│   └── migrations/          # DB migrations
-├── docker-compose.yml       # Infrastructure config
-└── package.json
+├── apps/
+│   ├── backend/               # NestJS backend
+│   │   ├── src/
+│   │   │   ├── app.module.ts
+│   │   │   ├── main.ts
+│   │   │   ├── common/
+│   │   │   │   ├── embedding/        # Ollama integration
+│   │   │   │   └── prisma/           # Database client
+│   │   │   ├── links/               # Link save/search logic
+│   │   │   └── auth/                # Auth module (stub)
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma        # Database schema
+│   │   │   └── migrations/          # DB migrations
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── nest-cli.json
+│   └── web/                   # Next.js frontend
+│       ├── app/
+│       │   ├── page.tsx       # Dashboard UI
+│       │   └── globals.css
+│       └── package.json
+├── docker/
+│   └── initdb/
+│       └── 001_enable_pgvector.sql
+├── docker-compose.yml
+├── package.json
+└── README.md
 ```
 
 ### Key Environment Variables

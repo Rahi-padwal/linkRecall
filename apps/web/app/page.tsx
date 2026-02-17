@@ -38,7 +38,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ originalUrl: input }),
+        body: JSON.stringify({ originalUrl: input, userId: USER_ID }),
       });
 
       if (!response.ok) {

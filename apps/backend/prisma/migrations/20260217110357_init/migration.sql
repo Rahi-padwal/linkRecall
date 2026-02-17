@@ -14,9 +14,9 @@ CREATE TABLE "Link" (
     "originalUrl" TEXT NOT NULL,
     "title" TEXT,
     "summary" TEXT,
-    "keywords" TEXT[],
+    "keywords" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "rawExtractedText" TEXT,
-    "embedding" JSONB,
+    "embedding" vector(768),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Link_pkey" PRIMARY KEY ("id")

@@ -16,18 +16,36 @@ export class LinksService {
   async create(dto: CreateLinkDto) {
     try {
       this.logger.debug('Starting link create flow.');
-      const user = await this.prisma.user.findFirst({
-        select: { id: true },
-      });
-
-      const userId = user?.id
-        ? user.id
-        : (
-            await this.prisma.user.create({
-              data: { email: `temp+${Date.now()}@example.com` },
-              select: { id: true },
-            })
-          ).id;
+      
+      // Use userId from DTO, or find/create a default user
+      let userId = dto.userId;
+      if (!userId) {
+        const user = await this.prisma.user.findFirst({
+          select: { id: true },
+        });
+        userId = user?.id
+          ? user.id
+          : (
+              await this.prisma.user.create({
+                data: { email: `temp+${Date.now()}@example.com` },
+                select: { id: true },
+              })
+            ).id;
+      } else {
+        // Ensure the provided userId exists, or create it
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true },
+        });
+        if (!user) {
+          await this.prisma.user.create({
+            data: { 
+              id: userId,
+              email: `user+${userId}@example.com` 
+            },
+          });
+        }
+      }
 
       const { metaDescription } = await this.extractMetadata(dto.originalUrl);
       this.logger.debug('Metadata extraction completed.');
@@ -58,11 +76,18 @@ export class LinksService {
     title: string | null,
     metaDescription: string | null,
   ) {
-    const input = [title?.trim(), metaDescription?.trim()]
-      .filter(Boolean)
-      .join(' - ');
-
     try {
+      // Use title + description, fallback to URL if both empty
+      const input = [title?.trim(), metaDescription?.trim()]
+        .filter(Boolean)
+        .join(' - ')
+        .trim() || link.originalUrl;
+
+      if (!input) {
+        this.logger.warn(`No content to embed for link ${link.id}`);
+        return;
+      }
+
       this.logger.debug(`Starting embedding generation for link ${link.id}.`);
       const embedding = await this.embeddingService.generateEmbedding(input);
 
@@ -129,6 +154,7 @@ export class LinksService {
     }
 
     const embedding = await this.embeddingService.generateEmbedding(input);
+    this.logger.debug(`Generated embedding with ${embedding.length} dimensions for query: "${input}"`);
 
     const results = await this.prisma.$queryRaw<LinkSearchResult[]>(
       Prisma.sql`
@@ -137,14 +163,20 @@ export class LinksService {
           "userId",
           "originalUrl",
           "title",
-          ("embedding" <=> ARRAY[${Prisma.join(embedding)}]::vector) AS "score" -- cosine distance
+          ("embedding" <=> ARRAY[${Prisma.join(embedding)}]::vector) AS "score"
         FROM "Link"
         WHERE "embedding" IS NOT NULL
           AND "userId" = ${userId}
+          AND ("embedding" <=> ARRAY[${Prisma.join(embedding)}]::vector) < 0.5
         ORDER BY "score" ASC
         LIMIT 5
       `,
     );
+
+    this.logger.debug(`Search returned ${results.length} results for userId: ${userId}`);
+    if (results.length > 0) {
+      this.logger.debug(`Top result: ${results[0].originalUrl}, score: ${results[0].score}`);
+    }
 
     return results.map((result) => ({
       id: result.id,

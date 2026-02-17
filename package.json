@@ -1,49 +1,27 @@
 {
   "name": "linkRecall",
   "version": "0.0.1",
-  "description": "",
+  "description": "Build a memory of everything you read using local embeddings and semantic search",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "workspaces": [
+    "apps/backend",
+    "apps/web"
+  ],
   "scripts": {
-    "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
-    "lint": "eslint \"src/**/*.ts\" --fix",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate:dev": "prisma migrate dev",
-    "prisma:migrate:deploy": "prisma migrate deploy"
-  },
-  "dependencies": {
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/core": "^10.0.0",
-    "@nestjs/platform-express": "^10.0.0",
-    "@nestjs/config": "^3.2.3",
-    "@prisma/client": "^5.12.1",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.1",
-    "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "build": "npm run build -w linkrecall-backend && npm run build -w linkrecall-web",
+    "format": "npm run format -w linkrecall-backend && npm run format -w linkrecall-web",
+    "lint": "npm run lint -w linkrecall-backend && npm run lint -w linkrecall-web",
+    "start:backend": "npm run start:dev -w linkrecall-backend",
+    "start:frontend": "npm run dev -w linkrecall-web",
+    "prisma:migrate:dev": "npm run prisma:migrate:dev -w linkrecall-backend",
+    "prisma:migrate:deploy": "npm run prisma:migrate:deploy -w linkrecall-backend",
+    "prisma:generate": "npm run prisma:generate -w linkrecall-backend",
+    "test": "npm run test -w linkrecall-backend",
+    "test:e2e": "npm run test:e2e -w linkrecall-backend"
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.0.0",
-    "@nestjs/schematics": "^10.0.0",
-    "@types/express": "^5.0.0",
-    "@types/node": "^20.3.1",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^8.0.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-prettier": "^5.0.0",
-    "prettier": "^3.0.0",
-    "prisma": "^5.12.1",
-    "source-map-support": "^0.5.21",
-    "ts-loader": "^9.4.3",
-    "ts-node": "^10.9.1",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.1.3"
+    "prettier": "^3.0.0"
   }
 }
