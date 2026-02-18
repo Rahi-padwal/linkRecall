@@ -2,6 +2,29 @@
 
 Build a memory of everything you read using local embeddings and semantic search.
 
+
+## Features
+- **Save Links**: Quickly save URLs with automatic metadata extraction (title, description)
+- **Local Embeddings**: Generate 768-dimensional embeddings using Ollama's `nomic-embed-text` model (100% offline)
+- **Semantic Search**: Find saved links by concept, not just keywords, using pgvector cosine similarity
+- **Privacy-First**: All processing happens locally; no external API calls or data transmission
+- **Docker Ready**: One-command setup with `docker-compose` for PostgreSQL, pgvector, and Ollama
+- **Modern Stack**: NestJS backend + Next.js frontend with TypeScript and Tailwind CSS
+
+## Architecture Flowchart
+
+<img width="1110" height="384" alt="image" src="https://github.com/user-attachments/assets/5ade2fb3-4f30-48e2-b226-64faeeb85403" />
+
+## Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Frontend** | Next.js, React, TypeScript, Tailwind CSS | Dashboard UI for saving/searching links |
+| **Backend** | NestJS, TypeScript, class-validator | RESTful API with modular architecture |
+| **Database** | PostgreSQL, Prisma, pgvector | Vector storage and similarity search |
+| **Embeddings** | Ollama, 768 dimensions | Local embedding generation |
+| **Infrastructure** | Docker| Containerized dev/production environment |
+
 ## Quick Start (TL;DR)
 
 ```bash
@@ -23,75 +46,6 @@ npm run start:frontend
 # Open http://localhost:3001
 ```
 
-**Key Points:**
-- Docker needed (PostgreSQL + Ollama)
-- Two terminals: one for backend, one for frontend
-- Backend: `http://localhost:3000`
-- Frontend: `http://localhost:3001`
-
-## Features
-
-- **Save Links**: Quickly save URLs with automatic metadata extraction (title, description)
-- **Local Embeddings**: Generate 768-dimensional embeddings using Ollama's `nomic-embed-text` model (100% offline)
-- **Semantic Search**: Find saved links by concept, not just keywords, using pgvector cosine similarity
-- **Privacy-First**: All processing happens locally; no external API calls or data transmission
-- **Docker Ready**: One-command setup with `docker-compose` for PostgreSQL, pgvector, and Ollama
-- **Modern Stack**: NestJS backend + Next.js frontend with TypeScript and Tailwind CSS
-
-## Screenshot
-
-Dashboard UI with save link input (left) and semantic search interface (right), displaying search results with similarity scores.
-
-## Architecture Flowchart
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     linkRecall Workflow                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  SAVE LINK FLOW:                                                │
-│  ┌─────────────┐    ┌──────────────────┐    ┌──────────────┐   │
-│  │  User Pastes│───▶│ Extract Metadata │───▶│  Generate    │   │
-│  │  Link URL   │    │  (title, desc)   │    │  Embedding   │   │
-│  └─────────────┘    │  via Fetch + DOM │    │  (Ollama)    │   │
-│                     │  Parser          │    │  768 dims    │   │
-│                     └──────────────────┘    └───────┬──────┘   │
-│                                                     │           │
-│                                            ┌────────▼────────┐  │
-│                                            │ Store in DB:    │  │
-│                                            │ - URL, title,   │  │
-│                                            │ - embedding     │  │
-│                                            │ - userId        │  │
-│                                            └────────────────┘  │
-│                                                                 │
-│  SEARCH FLOW:                                                   │
-│  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
-│  │   User Query │───▶│  Generate Query  │───▶│ pgvector     │  │
-│  │              │    │  Embedding       │    │ Cosine Sim   │  │
-│  └──────────────┘    │  (Ollama)        │    │ (top 5)      │  │
-│                      │  768 dims        │    │ Filter by    │  │
-│                      └──────────────────┘    │ userId       │  │
-│                                              └───────┬──────┘  │
-│                                                      │          │
-│                                             ┌────────▼────────┐ │
-│                                             │ Return Results  │ │
-│                                             │ with Scores     │ │
-│                                             └────────────────┘ │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Technology Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | Next.js 16.1+, React 19, TypeScript, Tailwind CSS | Dashboard UI for saving/searching links |
-| **Backend** | NestJS 10+, TypeScript 5.1+, class-validator | RESTful API with modular architecture |
-| **Database** | PostgreSQL 16, Prisma 5.12+, pgvector | Vector storage and similarity search |
-| **Embeddings** | Ollama (nomic-embed-text), 768 dimensions | Local embedding generation |
-| **Infrastructure** | Docker, Docker Compose | Containerized dev/production environment |
-| **Package Manager** | npm | Dependency management |
-
 ## Installation
 
 ### Prerequisites
@@ -112,10 +66,6 @@ cd linkRecall
 docker-compose up -d
 ```
 
-This starts:
-- **PostgreSQL** (port 5432) with pgvector extension
-- **Ollama** (port 11434) with models ready for use
-
 Wait ~30 seconds for services to stabilize. Verify with:
 
 ```bash
@@ -128,15 +78,11 @@ docker-compose ps
 npm install
 ```
 
-This installs dependencies for both backend and frontend (workspaces).
-
 ### Step 4: Set Up the Database
 
 ```bash
 npm run prisma:migrate:dev
 ```
-
-This creates the database schema and runs migrations automatically.
 
 ### Step 5: Start Backend Server
 
@@ -152,7 +98,7 @@ Backend runs on `http://localhost:3000`.
 npm run start:frontend
 ```
 
-Frontend runs on `http://localhost:3001` (or see Next.js output for the correct port).
+Frontend runs on `http://localhost:3001`.
 
 **Note**: If ports conflict, update `apps/web/package.json`:
 
@@ -181,58 +127,6 @@ Frontend runs on `http://localhost:3001` (or see Next.js output for the correct 
    - **URL**: Original link
    - **Score**: Cosine similarity (0–1, higher = more relevant)
 
-**Examples**:
-- Query: "How to build a REST API?" → Finds articles on APIs, web services, etc.
-- Query: "Database optimization" → Surfaces posts on indexing, performance tuning, etc.
-
-### Backend API Endpoints
-
-#### Save a Link
-```http
-POST /links
-Content-Type: application/json
-
-{
-  "url": "https://example.com/article",
-  "userId": "user-123"
-}
-```
-
-**Response**:
-```json
-{
-  "id": "uuid",
-  "originalUrl": "https://example.com/article",
-  "title": "Article Title",
-  "embedding": null,
-  "createdAt": "2025-01-21T12:00:00Z"
-}
-```
-
-#### Search Links
-```http
-GET /links/search?q=machine%20learning&userId=user-123
-```
-
-**Response**:
-```json
-[
-  {
-    "id": "uuid-1",
-    "originalUrl": "https://example.com/ml-article",
-    "title": "ML Basics",
-    "score": 0.87,
-    "createdAt": "2025-01-21T10:00:00Z"
-  },
-  {
-    "id": "uuid-2",
-    "originalUrl": "https://example.com/ai-guide",
-    "title": "AI Guide",
-    "score": 0.79,
-    "createdAt": "2025-01-20T15:00:00Z"
-  }
-]
-```
 
 ## Development
 
@@ -267,29 +161,6 @@ linkRecall/
 ├── docker-compose.yml
 ├── package.json
 └── README.md
-```
-
-### Key Environment Variables
-
-**Backend** (`.env`):
-```
-DATABASE_URL=postgresql://user:password@localhost:5432/linkrecall
-OLLAMA_EMBEDDINGS_URL=http://127.0.0.1:11434/api/embeddings
-PORT=3000
-NODE_ENV=development
-```
-
-**Frontend** (`.env.local`):
-```
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
-```
-
-### Running Tests
-
-```bash
-npm run test           # Unit tests
-npm run test:e2e       # End-to-end tests
-npm run test:cov       # Coverage report
 ```
 
 ### Database Migrations
@@ -328,21 +199,6 @@ docker run -d -p 3000:3000 \
   linkrecall:latest
 ```
 
-### Docker Compose Production
-
-Update `docker-compose.yml` for production:
-- Set `environment` variables for DATABASE_URL, OLLAMA endpoint
-- Use named volumes with backup strategy
-- Add a reverse proxy (Nginx) for HTTPS
-
-### Cloud Deployment
-
-**AWS/DigitalOcean/GCP**: Deploy both containers:
-1. Push backend image to registry
-2. Deploy PostgreSQL managed database (RDS/Cloud SQL)
-3. Deploy Ollama on compute instance or use local inference
-4. Route frontend requests through CDN
-
 ## Contributing
 
 We welcome contributions! Please follow these steps:
@@ -352,13 +208,6 @@ We welcome contributions! Please follow these steps:
 3. **Commit changes**: `git commit -m "Add your feature"`
 4. **Push to branch**: `git push origin feature/your-feature-name`
 5. **Open a Pull Request** with a clear description
-
-### Code Style
-
-- Use TypeScript in both backend and frontend
-- Run `npm run lint` to check code style
-- Keep functions small and well-documented
-- Write tests for new features
 
 ### Reporting Issues
 
@@ -370,13 +219,3 @@ Please use [GitHub Issues](https://github.com/yourusername/linkRecall/issues) to
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](./LICENSE) file for details.
-
-## Support
-
-- **Documentation**: See this README and inline code comments
-- **Issues**: [GitHub Issues](https://github.com/yourusername/linkRecall/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/linkRecall/discussions)
-
----
-
-**Built with ❤️ for semantic recall and offline-first knowledge management.**
